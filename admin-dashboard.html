@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Employee Attendance System</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <!-- Leaflet.js Map CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header class="app-header d-flex align-items-center justify-content-between px-4">
+        <div class="d-flex align-items-center gap-3">
+            <button class="btn btn-light border d-lg-none" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+            <h4 class="fw-bold mb-0 text-primary"><i class="fa-solid fa-user-shield me-2"></i>Admin Management Console</h4>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="dropdown">
+                <button class="btn btn-outline-primary dropdown-toggle d-flex align-items-center gap-2 rounded-pill px-3" type="button" data-bs-toggle="dropdown">
+                    <img id="adminHeaderAvatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150" class="rounded-circle" width="32" height="32" alt="Admin">
+                    <span id="adminHeaderName" class="fw-semibold fs-7 text-dark">Alexander Pierce</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow">
+                    <li><a class="dropdown-item" href="#settings" onclick="showSection('settings')"><i class="fa-solid fa-gear me-2 text-primary"></i>Company GPS Settings</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="#" onclick="store.logout()"><i class="fa-solid fa-right-from-bracket me-2"></i>Sign Out</a></li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <div class="d-flex">
+        <!-- Sidebar -->
+        <aside class="sidebar p-3" id="sidebar">
+            <nav class="nav flex-column">
+                <a href="#overview" onclick="showSection('overview')" class="nav-link-custom active" id="nav-overview">
+                    <i class="fa-solid fa-chart-pie"></i> <span>Dashboard Overview</span>
+                </a>
+                <a href="#employees" onclick="showSection('employees')" class="nav-link-custom" id="nav-employees">
+                    <i class="fa-solid fa-users"></i> <span>Employee Roster</span>
+                </a>
+                <a href="#attendance" onclick="showSection('attendance')" class="nav-link-custom" id="nav-attendance">
+                    <i class="fa-solid fa-calendar-check"></i> <span>Attendance Logs & GPS</span>
+                </a>
+                <a href="#leaves" onclick="showSection('leaves')" class="nav-link-custom" id="nav-leaves">
+                    <i class="fa-solid fa-business-time"></i> <span>Leave Requests</span> <span id="leaveBadge" class="badge bg-danger rounded-pill ms-auto">0</span>
+                </a>
+                <a href="#settings" onclick="showSection('settings')" class="nav-link-custom" id="nav-settings">
+                    <i class="fa-solid fa-sliders"></i> <span>Company & Radius GPS</span>
+                </a>
+                <a href="#reports" onclick="showSection('reports')" class="nav-link-custom" id="nav-reports">
+                    <i class="fa-solid fa-file-invoice"></i> <span>Reports & Export</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content flex-grow-1">
+
+            <!-- SECTION: Overview -->
+            <div id="sec-overview" class="content-section">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h3 class="fw-bold text-dark mb-1">Executive Dashboard</h3>
+                        <p class="text-muted fs-7 mb-0">Real-time attendance metrics & workforce overview</p>
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="refreshDashboard()"><i class="fa-solid fa-rotate-right me-1"></i> Refresh Data</button>
+                </div>
+
+                <!-- Metrics Grid -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <div class="glass-card metric-card border-start border-4 border-primary">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-muted fs-7 font-weight-bold">Total Staff</div>
+                                    <h3 class="fw-bold mb-0 text-primary" id="metricTotalEmp">0</h3>
+                                </div>
+                                <div class="metric-icon metric-icon-purple"><i class="fa-solid fa-users"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="glass-card metric-card border-start border-4 border-success">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-muted fs-7">Present Today</div>
+                                    <h3 class="fw-bold mb-0 text-success" id="metricPresent">0</h3>
+                                </div>
+                                <div class="metric-icon bg-success-subtle text-success"><i class="fa-solid fa-user-check"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="glass-card metric-card border-start border-4 border-warning">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-muted fs-7">Pending Leaves</div>
+                                    <h3 class="fw-bold mb-0 text-warning" id="metricLeaves">0</h3>
+                                </div>
+                                <div class="metric-icon bg-warning-subtle text-warning"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="glass-card metric-card border-start border-4 border-danger">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-muted fs-7">Absent / Off</div>
+                                    <h3 class="fw-bold mb-0 text-danger" id="metricAbsent">0</h3>
+                                </div>
+                                <div class="metric-icon bg-danger-subtle text-danger"><i class="fa-solid fa-user-xmark"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-8">
+                        <div class="glass-card p-4">
+                            <h5 class="fw-bold mb-3 text-primary"><i class="fa-solid fa-chart-area me-2"></i>Weekly Attendance Trend</h5>
+                            <canvas id="trendChart" height="220"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="glass-card p-4">
+                            <h5 class="fw-bold mb-3 text-primary"><i class="fa-solid fa-chart-pie me-2"></i>Department Breakdown</h5>
+                            <canvas id="deptChart" height="220"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION: Employees Roster -->
+            <div id="sec-employees" class="content-section d-none">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h3 class="fw-bold text-dark mb-1">Employee Roster Management</h3>
+                        <p class="text-muted fs-7 mb-0">Create, edit, search, and manage employee accounts</p>
+                    </div>
+                    <button class="btn btn-primary rounded-pill px-4" onclick="openAddEmployeeModal()"><i class="fa-solid fa-user-plus me-2"></i>Add New Employee</button>
+                </div>
+
+                <div class="glass-card p-3 mb-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-primary"></i></span>
+                                <input type="text" id="empSearchInput" class="form-control" placeholder="Search by name, ID, department..." onkeyup="filterEmployeeTable()">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <select id="empDeptFilter" class="form-select" onchange="filterEmployeeTable()">
+                                <option value="">All Departments</option>
+                                <option value="Engineering">Engineering</option>
+                                <option value="Design">Design</option>
+                                <option value="Management">Management</option>
+                                <option value="HR">HR</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card overflow-hidden">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" id="employeeTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Employee ID</th>
+                                    <th>Staff Member</th>
+                                    <th>Department</th>
+                                    <th>Designation</th>
+                                    <th>Joining Date</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employeeTableBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION: Attendance Logs & GPS -->
+            <div id="sec-attendance" class="content-section d-none">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h3 class="fw-bold text-dark mb-1">Live Attendance Logs & Location Verification</h3>
+                        <p class="text-muted fs-7 mb-0">View Punch-In timestamps, Geolocation coordinates, and office radius checks</p>
+                    </div>
+                    <button class="btn btn-outline-primary rounded-pill px-4" onclick="exportAttendanceCSV()"><i class="fa-solid fa-file-csv me-2"></i>Export Logs to CSV</button>
+                </div>
+
+                <div class="glass-card overflow-hidden">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Employee</th>
+                                    <th>Punch In</th>
+                                    <th>Punch Out</th>
+                                    <th>Hours</th>
+                                    <th>GPS Coordinates</th>
+                                    <th>Radius Check</th>
+                                    <th class="text-end">Map Location</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceLogsBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION: Leave Requests -->
+            <div id="sec-leaves" class="content-section d-none">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h3 class="fw-bold text-dark mb-1">Leave Requests Approval Workflow</h3>
+                        <p class="text-muted fs-7 mb-0">Review pending leave applications from employees</p>
+                    </div>
+                </div>
+
+                <div class="glass-card overflow-hidden">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Applied On</th>
+                                    <th>Employee</th>
+                                    <th>Leave Type</th>
+                                    <th>Duration</th>
+                                    <th>Reason</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leavesTableBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION: Company & Radius GPS Settings -->
+            <div id="sec-settings" class="content-section d-none">
+                <div class="mb-4">
+                    <h3 class="fw-bold text-dark mb-1">Company Office & Geofence GPS Settings</h3>
+                    <p class="text-muted fs-7">Set the exact Office Latitude, Longitude & Allowed Attendance Radius</p>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="glass-card p-4">
+                            <form id="companySettingsForm">
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold text-dark">Company Name</label>
+                                    <input type="text" id="cfgName" class="form-control" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold text-dark">Office Address</label>
+                                    <input type="text" id="cfgAddress" class="form-control" required>
+                                </div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold text-dark">Office Latitude</label>
+                                        <input type="number" step="any" id="cfgLat" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold text-dark">Office Longitude</label>
+                                        <input type="number" step="any" id="cfgLng" class="form-control" required>
+                                    </div>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold text-dark">Allowed Geofence Radius (Meters)</label>
+                                    <input type="number" id="cfgRadius" class="form-control" min="50" max="5000" required>
+                                    <div class="form-text fs-7 text-muted">Employees outside this radius will be flagged upon Punch In.</div>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary px-4 rounded-pill"><i class="fa-solid fa-floppy-disk me-2"></i>Save Configuration</button>
+                                    <button type="button" class="btn btn-outline-primary rounded-pill" onclick="fetchCurrentGPSForHQ()"><i class="fa-solid fa-crosshairs me-2"></i>Use My Current Location</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="glass-card p-4">
+                            <h5 class="fw-bold mb-3 text-primary"><i class="fa-solid fa-map-marked-alt me-2"></i>HQ Geofence Map Visualizer</h5>
+                            <div id="hq-leaflet-map" style="height: 300px; border-radius: 12px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION: Reports -->
+            <div id="sec-reports" class="content-section d-none">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h3 class="fw-bold text-dark mb-1">Reports & Analytics Export</h3>
+                        <p class="text-muted fs-7 mb-0">Generate attendance summaries and download formatted datasets</p>
+                    </div>
+                </div>
+
+                <div class="glass-card p-4 mb-4">
+                    <h5 class="fw-bold mb-3 text-primary">Export Custom Attendance Report</h5>
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold text-dark">Start Date</label>
+                            <input type="date" id="repStartDate" class="form-control">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold text-dark">End Date</label>
+                            <input type="date" id="repEndDate" class="form-control">
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-primary w-100 rounded-pill" onclick="exportAttendanceCSV()"><i class="fa-solid fa-file-csv me-2"></i>Download CSV Report</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Modal: Add/Edit Employee -->
+    <div class="modal fade" id="employeeModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content glass-card border-0">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold text-primary" id="empModalTitle">Add Employee Account</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="employeeForm">
+                        <input type="hidden" id="empFormMode" value="add">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold fs-7 text-dark">Employee ID</label>
+                            <input type="text" id="mEmpId" class="form-control" required placeholder="EMP003">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold fs-7 text-dark">Full Name</label>
+                            <input type="text" id="mEmpName" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold fs-7 text-dark">Email Address</label>
+                            <input type="email" id="mEmpEmail" class="form-control" required>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold fs-7 text-dark">Department</label>
+                                <select id="mEmpDept" class="form-select" required>
+                                    <option value="Engineering">Engineering</option>
+                                    <option value="Design">Design</option>
+                                    <option value="Management">Management</option>
+                                    <option value="HR">HR</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold fs-7 text-dark">Designation</label>
+                                <input type="text" id="mEmpDesig" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold fs-7 text-dark">Password</label>
+                            <input type="password" id="mEmpPassword" class="form-control" value="Emp@123" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 rounded-pill"><i class="fa-solid fa-check me-2"></i>Save Account</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: View Punch GPS Location -->
+    <div class="modal fade" id="mapModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content glass-card border-0">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-primary"><i class="fa-solid fa-map-location-dot me-2"></i>Punch Geolocation Verification</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div id="leaflet-map" style="height: 320px; width: 100%;"></div>
+                </div>
+                <div class="modal-footer fs-7">
+                    <div id="mapModalDetails" class="w-100 text-muted"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        let currentUser = store.getCurrentUser();
+        if (!currentUser || currentUser.role !== 'admin') {
+            window.location.href = 'login.html';
+        }
+
+        document.getElementById('adminHeaderName').textContent = currentUser.name;
+        if (currentUser.avatar) document.getElementById('adminHeaderAvatar').src = currentUser.avatar;
+
+        // Mobile Sidebar Toggle
+        const sidebarToggleBtn = document.getElementById('sidebarToggle');
+        if (sidebarToggleBtn) {
+            sidebarToggleBtn.addEventListener('click', function() {
+                document.getElementById('sidebar').classList.toggle('show');
+            });
+        }
+
+        let hqMap, hqCircle, hqMarker;
+        let punchMap, punchMarker, hqMapCircle;
+
+        function showSection(secName) {
+            document.querySelectorAll('.content-section').forEach(el => el.classList.add('d-none'));
+            document.querySelectorAll('.nav-link-custom').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById('sec-' + secName).classList.remove('d-none');
+            document.getElementById('nav-' + secName).classList.add('active');
+
+            // Close sidebar on mobile
+            document.getElementById('sidebar').classList.remove('show');
+
+            if (secName === 'overview') refreshDashboard();
+            if (secName === 'employees') renderEmployees();
+            if (secName === 'attendance') renderAttendance();
+            if (secName === 'leaves') renderLeaves();
+            if (secName === 'settings') renderSettings();
+        }
+
+        function refreshDashboard() {
+            const employees = store.getEmployees().filter(e => e.role === 'employee');
+            const attendance = store.getAttendance();
+            const leaves = store.getLeaves();
+            const today = new Date().toISOString().split('T')[0];
+
+            const todayAtt = attendance.filter(a => a.date === today && a.punchIn);
+            const pendingLeaves = leaves.filter(l => l.status === 'Pending');
+
+            document.getElementById('metricTotalEmp').textContent = employees.length;
+            document.getElementById('metricPresent').textContent = todayAtt.length;
+            document.getElementById('metricLeaves').textContent = pendingLeaves.length;
+            document.getElementById('metricAbsent').textContent = Math.max(0, employees.length - todayAtt.length);
+            document.getElementById('leaveBadge').textContent = pendingLeaves.length;
+
+            renderCharts(todayAtt.length, employees.length);
+        }
+
+        let trendChartObj, deptChartObj;
+        function renderCharts(presentCount, totalCount) {
+            const ctx1 = document.getElementById('trendChart').getContext('2d');
+            if (trendChartObj) trendChartObj.destroy();
+            trendChartObj = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Present Employees',
+                        data: [12, 14, 15, presentCount || 10, 13, 8, 4],
+                        borderColor: '#6d28d9',
+                        backgroundColor: 'rgba(109, 40, 217, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                }
+            });
+
+            const ctx2 = document.getElementById('deptChart').getContext('2d');
+            if (deptChartObj) deptChartObj.destroy();
+            deptChartObj = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Engineering', 'Design', 'Management', 'HR'],
+                    datasets: [{
+                        data: [40, 25, 20, 15],
+                        backgroundColor: ['#6d28d9', '#8b5cf6', '#a855f7', '#c084fc']
+                    }]
+                }
+            });
+        }
+
+        function filterEmployeeTable() {
+            const searchVal = (document.getElementById('empSearchInput').value || '').toLowerCase();
+            const deptVal = document.getElementById('empDeptFilter').value;
+            const employees = store.getEmployees().filter(e => e.role === 'employee');
+
+            const filtered = employees.filter(emp => {
+                const matchesSearch = emp.name.toLowerCase().includes(searchVal) || 
+                                      emp.id.toLowerCase().includes(searchVal) ||
+                                      emp.department.toLowerCase().includes(searchVal);
+                const matchesDept = deptVal === '' || emp.department === deptVal;
+                return matchesSearch && matchesDept;
+            });
+
+            renderEmployeeTableRows(filtered);
+        }
+
+        function renderEmployeeTableRows(employees) {
+            const tbody = document.getElementById('employeeTableBody');
+            tbody.innerHTML = employees.map(emp => `
+                <tr>
+                    <td><code>${emp.id}</code></td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <img src="${emp.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150'}" class="rounded-circle" width="36" height="36">
+                            <div>
+                                <div class="fw-semibold text-dark">${emp.name}</div>
+                                <div class="text-muted fs-7">${emp.email}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="badge badge-purple">${emp.department}</span></td>
+                    <td>${emp.designation}</td>
+                    <td>${emp.joiningDate || 'N/A'}</td>
+                    <td><span class="badge badge-soft-success">${emp.status}</span></td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-primary rounded-circle me-1" onclick="editEmp('${emp.id}')"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button class="btn btn-sm btn-outline-danger rounded-circle" onclick="deleteEmp('${emp.id}')"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderEmployees() {
+            filterEmployeeTable();
+        }
+
+        function editEmp(id) {
+            const emp = store.getEmployeeById(id);
+            if (!emp) return;
+            document.getElementById('empFormMode').value = 'edit';
+            document.getElementById('empModalTitle').textContent = 'Edit Employee Account';
+            document.getElementById('mEmpId').value = emp.id;
+            document.getElementById('mEmpId').readOnly = true;
+            document.getElementById('mEmpName').value = emp.name;
+            document.getElementById('mEmpEmail').value = emp.email;
+            document.getElementById('mEmpDept').value = emp.department;
+            document.getElementById('mEmpDesig').value = emp.designation;
+            document.getElementById('mEmpPassword').value = emp.passwordHash || 'Emp@123';
+
+            const modal = new bootstrap.Modal(document.getElementById('employeeModal'));
+            modal.show();
+        }
+
+        function deleteEmp(id) {
+            if (confirm('Are you sure you want to delete employee ' + id + '?')) {
+                store.deleteEmployee(id);
+                showToast('Employee deleted successfully', 'success');
+                renderEmployees();
+                refreshDashboard();
+            }
+        }
+
+        function renderAttendance() {
+            const records = store.getAttendance();
+            const company = store.getCompany();
+            const tbody = document.getElementById('attendanceLogsBody');
+
+            tbody.innerHTML = records.map(r => {
+                const isWithin = r.distance <= company.allowedRadius;
+                return `
+                    <tr>
+                        <td>${r.date}</td>
+                        <td><strong class="text-dark">${r.employeeName}</strong> (<code>${r.employeeId}</code>)</td>
+                        <td><span class="badge bg-success-subtle text-success">${r.punchIn || 'N/A'}</span></td>
+                        <td><span class="badge bg-danger-subtle text-danger">${r.punchOut || 'N/A'}</span></td>
+                        <td>${r.hours || 'Calculating...'}</td>
+                        <td><small>${r.lat ? r.lat.toFixed(4) + ', ' + r.lng.toFixed(4) : 'N/A'}</small></td>
+                        <td>
+                            <span class="badge ${isWithin ? 'badge-soft-success' : 'badge-soft-danger'}">
+                                ${isWithin ? 'IN RADIUS (' + r.distance + 'm)' : 'OUTSIDE RADIUS (' + r.distance + 'm)'}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-primary rounded-circle" onclick="viewMapLocation(${r.lat}, ${r.lng}, '${r.employeeName.replace(/'/g, "\\'")}', ${r.distance})"><i class="fa-solid fa-map-location-dot"></i></button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function viewMapLocation(lat, lng, name, distance) {
+            const company = store.getCompany();
+            const myModal = new bootstrap.Modal(document.getElementById('mapModal'));
+            myModal.show();
+
+            setTimeout(() => {
+                if (!punchMap) {
+                    punchMap = L.map('leaflet-map').setView([lat, lng], 15);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(punchMap);
+                } else {
+                    punchMap.setView([lat, lng], 15);
+                }
+
+                punchMap.invalidateSize();
+
+                if (punchMarker) punchMap.removeLayer(punchMarker);
+                if (hqMapCircle) punchMap.removeLayer(hqMapCircle);
+
+                punchMarker = L.marker([lat, lng]).addTo(punchMap).bindPopup(name + ' Punch Location').openPopup();
+                hqMapCircle = L.circle([company.latitude, company.longitude], {
+                    color: '#6d28d9',
+                    fillColor: '#8b5cf6',
+                    fillOpacity: 0.2,
+                    radius: company.allowedRadius
+                }).addTo(punchMap);
+
+                document.getElementById('mapModalDetails').innerHTML = `
+                    <strong>Employee:</strong> ${name} | <strong>Coordinates:</strong> ${lat}, ${lng} | <strong>Distance to HQ:</strong> ${distance}m (Allowed: ${company.allowedRadius}m)
+                `;
+            }, 350);
+        }
+
+        function renderLeaves() {
+            const leaves = store.getLeaves();
+            const tbody = document.getElementById('leavesTableBody');
+
+            tbody.innerHTML = leaves.map(l => `
+                <tr>
+                    <td>${l.appliedOn}</td>
+                    <td><strong class="text-dark">${l.employeeName}</strong></td>
+                    <td><span class="badge badge-purple">${l.leaveType}</span></td>
+                    <td>${l.fromDate} to ${l.toDate}</td>
+                    <td><small>${l.reason}</small></td>
+                    <td>
+                        <span class="badge ${l.status === 'Approved' ? 'badge-soft-success' : l.status === 'Rejected' ? 'badge-soft-danger' : 'badge-soft-warning'}">
+                            ${l.status}
+                        </span>
+                    </td>
+                    <td class="text-end">
+                        ${l.status === 'Pending' ? `
+                            <button class="btn btn-sm btn-success rounded-circle me-1" onclick="updateLeave('${l.id}', 'Approved')"><i class="fa-solid fa-check"></i></button>
+                            <button class="btn btn-sm btn-danger rounded-circle" onclick="updateLeave('${l.id}', 'Rejected')"><i class="fa-solid fa-xmark"></i></button>
+                        ` : '-'}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateLeave(id, status) {
+            let leaves = store.getLeaves();
+            let leave = leaves.find(l => l.id === id);
+            if (leave) {
+                leave.status = status;
+                store.saveLeave(leave);
+                showToast('Leave request ' + status, 'success');
+                renderLeaves();
+                refreshDashboard();
+            }
+        }
+
+        function renderSettings() {
+            const c = store.getCompany();
+            document.getElementById('cfgName').value = c.name;
+            document.getElementById('cfgAddress').value = c.address;
+            document.getElementById('cfgLat').value = c.latitude;
+            document.getElementById('cfgLng').value = c.longitude;
+            document.getElementById('cfgRadius').value = c.allowedRadius;
+
+            setTimeout(() => {
+                if (!hqMap) {
+                    hqMap = L.map('hq-leaflet-map').setView([c.latitude, c.longitude], 14);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(hqMap);
+                } else {
+                    hqMap.setView([c.latitude, c.longitude], 14);
+                }
+
+                hqMap.invalidateSize();
+
+                if (hqMarker) hqMap.removeLayer(hqMarker);
+                if (hqCircle) hqMap.removeLayer(hqCircle);
+
+                hqMarker = L.marker([c.latitude, c.longitude]).addTo(hqMap).bindPopup(c.name).openPopup();
+                hqCircle = L.circle([c.latitude, c.longitude], {
+                    color: '#6d28d9',
+                    fillColor: '#8b5cf6',
+                    fillOpacity: 0.2,
+                    radius: c.allowedRadius
+                }).addTo(hqMap);
+            }, 350);
+        }
+
+        document.getElementById('companySettingsForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const updated = {
+                name: document.getElementById('cfgName').value,
+                address: document.getElementById('cfgAddress').value,
+                latitude: parseFloat(document.getElementById('cfgLat').value),
+                longitude: parseFloat(document.getElementById('cfgLng').value),
+                allowedRadius: parseInt(document.getElementById('cfgRadius').value)
+            };
+            store.saveCompany(updated);
+            showToast('Company Geofence settings updated successfully!', 'success');
+            renderSettings();
+        });
+
+        function fetchCurrentGPSForHQ() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    document.getElementById('cfgLat').value = pos.coords.latitude;
+                    document.getElementById('cfgLng').value = pos.coords.longitude;
+                    showToast('Current GPS coordinates fetched!', 'success');
+                }, () => showToast('Unable to retrieve GPS coordinates', 'error'), { timeout: 4000 });
+            }
+        }
+
+        function openAddEmployeeModal() {
+            document.getElementById('empFormMode').value = 'add';
+            document.getElementById('empModalTitle').textContent = 'Add Employee Account';
+            document.getElementById('employeeForm').reset();
+            document.getElementById('mEmpId').readOnly = false;
+            document.getElementById('mEmpId').value = 'EMP' + String(store.getEmployees().length + 1).padStart(3, '0');
+            const modal = new bootstrap.Modal(document.getElementById('employeeModal'));
+            modal.show();
+        }
+
+        document.getElementById('employeeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const empId = document.getElementById('mEmpId').value;
+            const emp = {
+                id: empId,
+                name: document.getElementById('mEmpName').value,
+                email: document.getElementById('mEmpEmail').value,
+                role: 'employee',
+                department: document.getElementById('mEmpDept').value,
+                designation: document.getElementById('mEmpDesig').value,
+                joiningDate: new Date().toISOString().split('T')[0],
+                status: 'Active',
+                passwordHash: document.getElementById('mEmpPassword').value
+            };
+
+            store.saveEmployee(emp);
+            showToast('Employee account saved!', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('employeeModal')).hide();
+            renderEmployees();
+            refreshDashboard();
+        });
+
+        function exportAttendanceCSV() {
+            const records = store.getAttendance();
+            if (records.length === 0) {
+                showToast('No attendance records available to export', 'warning');
+                return;
+            }
+            const rows = [
+                ['Date', 'Employee ID', 'Employee Name', 'Punch In', 'Punch Out', 'Hours', 'Latitude', 'Longitude', 'Distance (m)']
+            ];
+            records.forEach(r => {
+                rows.push([r.date, r.employeeId, r.employeeName, r.punchIn, r.punchOut, r.hours, r.lat, r.lng, r.distance]);
+            });
+            exportTableToCSV('Attendance_Report.csv', rows);
+        }
+
+        // Initialize Section
+        showSection('overview');
+    </script>
+</body>
+</html>

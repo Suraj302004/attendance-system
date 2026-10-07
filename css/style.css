@@ -1,0 +1,258 @@
+/* Modern White & Purple Design System for Employee Attendance System */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+    --primary-color: #6d28d9;
+    --primary-hover: #5b21b6;
+    --primary-light: #8b5cf6;
+    --primary-soft: #f5f3ff;
+    --primary-border: #ddd6fe;
+    
+    --secondary-color: #a855f7;
+    --accent-purple: #c084fc;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --danger-color: #ef4444;
+    
+    --card-bg: #ffffff;
+    --body-bg: #faf8ff;
+    --text-primary: #1e1b4b;
+    --text-muted: #6b7280;
+    --border-color: #e9d5ff;
+    --sidebar-width: 260px;
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 24px;
+    --shadow-sm: 0 2px 5px rgba(109, 40, 217, 0.04);
+    --shadow-md: 0 6px 18px rgba(109, 40, 217, 0.08);
+    --shadow-lg: 0 15px 35px -5px rgba(109, 40, 217, 0.15);
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: var(--body-bg);
+    color: var(--text-primary);
+    overflow-x: hidden;
+}
+
+/* Glassmorphism & Elevation */
+.glass-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.glass-card:hover {
+    box-shadow: var(--shadow-lg);
+    border-color: #c084fc;
+}
+
+/* Buttons */
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+    border: none;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(109, 40, 217, 0.25);
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover, .btn-primary:focus {
+    background: linear-gradient(135deg, var(--primary-hover), var(--primary-color));
+    box-shadow: 0 6px 16px rgba(109, 40, 217, 0.35);
+    color: #ffffff;
+}
+
+.btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    background-color: transparent;
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    color: #ffffff;
+    border-color: var(--primary-color);
+}
+
+/* Navbar */
+.navbar-purple {
+    background: linear-gradient(135deg, #4c1d95, #6d28d9) !important;
+}
+
+/* Header & Sidebar */
+.app-header {
+    height: 70px;
+    background: #ffffff;
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 10px rgba(109, 40, 217, 0.05);
+}
+
+.sidebar {
+    width: var(--sidebar-width);
+    background: #ffffff;
+    border-right: 1px solid var(--border-color);
+    min-height: calc(100vh - 70px);
+    position: fixed;
+    top: 70px;
+    left: 0;
+    z-index: 90;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.main-content {
+    margin-left: var(--sidebar-width);
+    padding: 2rem;
+    min-height: calc(100vh - 70px);
+}
+
+@media (max-width: 991.98px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+    .sidebar.show {
+        transform: translateX(0);
+    }
+    .main-content {
+        margin-left: 0;
+        padding: 1rem;
+    }
+}
+
+/* Navigation Item Styling */
+.nav-link-custom {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    color: #4b5563;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    margin-bottom: 6px;
+}
+
+.nav-link-custom:hover,
+.nav-link-custom.active {
+    color: var(--primary-color);
+    background: var(--primary-soft);
+    border-left: 4px solid var(--primary-color);
+}
+
+.nav-link-custom i {
+    font-size: 1.2rem;
+    color: var(--primary-light);
+}
+
+.nav-link-custom.active i {
+    color: var(--primary-color);
+}
+
+/* Nav Pills (Employee Dashboard) */
+.nav-pills .nav-link.active {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-light)) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(109, 40, 217, 0.25);
+}
+
+.nav-pills .nav-link {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* Metric Cards */
+.metric-card {
+    position: relative;
+    overflow: hidden;
+    padding: 1.5rem;
+    border-radius: var(--radius-md);
+    background: #ffffff;
+}
+
+.metric-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+}
+
+.metric-icon-purple {
+    background: var(--primary-soft);
+    color: var(--primary-color);
+}
+
+/* Punch Circle Widget */
+.punch-circle {
+    width: 190px;
+    height: 190px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6d28d9, #a855f7);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    box-shadow: 0 12px 30px rgba(109, 40, 217, 0.4);
+    margin: 0 auto;
+    cursor: pointer;
+    border: 6px solid #f3e8ff;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.punch-circle:hover {
+    transform: scale(1.05);
+    box-shadow: 0 18px 36px rgba(109, 40, 217, 0.5);
+}
+
+.punch-circle.punched-in {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    box-shadow: 0 12px 30px rgba(239, 68, 68, 0.4);
+    border-color: #fee2e2;
+}
+
+/* Badges */
+.badge-purple {
+    background-color: var(--primary-soft);
+    color: var(--primary-color);
+    border: 1px solid var(--primary-border);
+}
+
+.badge-soft-success {
+    background-color: #ecfdf5;
+    color: #059669;
+}
+.badge-soft-danger {
+    background-color: #fef2f2;
+    color: #dc2626;
+}
+.badge-soft-warning {
+    background-color: #fffbeb;
+    color: #d97706;
+}
+
+/* Table Headings */
+.table-light {
+    background-color: #f3e8ff !important;
+    color: #4c1d95;
+}
+
+.table-light th {
+    color: #4c1d95;
+    font-weight: 700;
+}
+
+/* Toast Notifications */
+.toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1050;
+}

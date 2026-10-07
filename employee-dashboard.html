@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Workspace | Geolocation Attendance</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <!-- Leaflet.js Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header class="app-header d-flex align-items-center justify-content-between px-4">
+        <div class="d-flex align-items-center gap-3">
+            <h4 class="fw-bold mb-0 text-primary"><i class="fa-solid fa-id-badge me-2"></i>Employee Self-Service</h4>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="dropdown">
+                <button class="btn btn-outline-primary dropdown-toggle d-flex align-items-center gap-2 rounded-pill px-3" type="button" data-bs-toggle="dropdown">
+                    <img id="empHeaderAvatar" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150" class="rounded-circle" width="32" height="32" alt="Employee">
+                    <span id="empHeaderName" class="fw-semibold fs-7 text-dark">Sarah Connor</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow">
+                    <li><a class="dropdown-item" href="#profile" onclick="showSection('profile')"><i class="fa-solid fa-user me-2 text-primary"></i>My Profile</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="#" onclick="store.logout()"><i class="fa-solid fa-right-from-bracket me-2"></i>Sign Out</a></li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <div class="container py-4">
+
+        <!-- Navigation Pills -->
+        <ul class="nav nav-pills justify-content-center mb-4 bg-white p-2 glass-card rounded-pill shadow-sm">
+            <li class="nav-item">
+                <a class="nav-link active fw-semibold rounded-pill" id="tab-punch" onclick="showSection('punch')" href="#punch"><i class="fa-solid fa-location-dot me-1"></i> Punch In / Out</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link fw-semibold rounded-pill" id="tab-history" onclick="showSection('history')" href="#history"><i class="fa-solid fa-clock-rotate-left me-1"></i> My Attendance History</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link fw-semibold rounded-pill" id="tab-leave" onclick="showSection('leave')" href="#leave"><i class="fa-solid fa-calendar-plus me-1"></i> Apply & Status Leaves</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link fw-semibold rounded-pill" id="tab-profile" onclick="showSection('profile')" href="#profile"><i class="fa-solid fa-user-gear me-1"></i> My Profile</a>
+            </li>
+        </ul>
+
+        <!-- SECTION: Punch In / Out -->
+        <div id="sec-punch" class="emp-section">
+            <div class="row justify-content-center g-4">
+                <div class="col-md-6 col-lg-5 text-center">
+                    <div class="glass-card p-4 p-md-5">
+
+                        <!-- Real-time Clock Widget -->
+                        <div class="mb-4">
+                            <h2 class="display-5 fw-bold text-primary mb-0" id="liveClock">00:00:00 AM</h2>
+                            <div class="text-muted fw-semibold" id="liveDate">Monday, Jan 15, 2026</div>
+                        </div>
+
+                        <!-- Punch Button Widget -->
+                        <div class="my-4">
+                            <button id="punchBtn" class="punch-circle" onclick="handlePunchAction()">
+                                <i class="fa-solid fa-fingerprint fs-1 mb-2"></i>
+                                <span id="punchBtnLabel" class="fw-bold fs-5">PUNCH IN</span>
+                            </button>
+                        </div>
+
+                        <!-- Status Badge -->
+                        <div class="mb-3">
+                            <span id="punchStatusBadge" class="badge badge-purple px-3 py-2 fs-7">NOT PUNCHED IN TODAY</span>
+                        </div>
+
+                        <!-- Location & Distance Feedback -->
+                        <div class="bg-purple-subtle p-3 rounded-3 text-start fs-7 border" style="background-color: var(--primary-soft);">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted">Office Geofence HQ:</span>
+                                <span class="fw-semibold text-dark" id="hqNameText">Antigravity HQ</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted">Distance to Office:</span>
+                                <span class="fw-semibold text-primary" id="distanceText">Locating GPS...</span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">Allowed Radius:</span>
+                                <span class="fw-semibold text-dark" id="allowedRadiusText">200 meters</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Leaflet Live Location Visualizer -->
+                <div class="col-md-6 col-lg-6">
+                    <div class="glass-card p-4 h-100">
+                        <h5 class="fw-bold mb-3 text-primary"><i class="fa-solid fa-crosshairs me-2"></i>Live Location Geofence Check</h5>
+                        <div id="emp-leaflet-map" style="height: 320px; border-radius: 12px;"></div>
+                        <div class="text-muted fs-7 mt-2 text-center">Your GPS position is verified against the office radius prior to punching.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: History -->
+        <div id="sec-history" class="emp-section d-none">
+            <div class="glass-card overflow-hidden">
+                <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0 text-primary">My Personal Attendance Records</h5>
+                    <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="renderEmpHistory()"><i class="fa-solid fa-arrows-rotate me-1"></i>Refresh</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Punch In</th>
+                                <th>Punch Out</th>
+                                <th>Total Hours</th>
+                                <th>GPS Location</th>
+                                <th>Radius Compliance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="empHistoryTableBody">
+                            <!-- Dynamic -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: Leave -->
+        <div id="sec-leave" class="emp-section d-none">
+            <div class="row g-4">
+                <!-- Apply Leave Form -->
+                <div class="col-md-5">
+                    <div class="glass-card p-4">
+                        <h5 class="fw-bold mb-3 text-primary"><i class="fa-solid fa-calendar-plus me-2"></i>Apply for Leave</h5>
+                        <form id="leaveApplyForm">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold fs-7 text-dark">Leave Category</label>
+                                <select id="lLeaveType" class="form-select" required>
+                                    <option value="Casual Leave">Casual Leave</option>
+                                    <option value="Sick Leave">Sick Leave</option>
+                                    <option value="Emergency Leave">Emergency Leave</option>
+                                    <option value="Paid Leave">Paid Leave</option>
+                                </select>
+                            </div>
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold fs-7 text-dark">From Date</label>
+                                    <input type="date" id="lFromDate" class="form-control" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold fs-7 text-dark">To Date</label>
+                                    <input type="date" id="lToDate" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold fs-7 text-dark">Reason for Application</label>
+                                <textarea id="lReason" class="form-control" rows="3" required placeholder="Provide reason..."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100 rounded-pill"><i class="fa-solid fa-paper-plane me-2"></i>Submit Application</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- My Leave Status -->
+                <div class="col-md-7">
+                    <div class="glass-card overflow-hidden">
+                        <div class="p-3 bg-light border-bottom">
+                            <h5 class="fw-bold mb-0 text-primary">My Leave Applications & Status</h5>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Applied Date</th>
+                                        <th>Type</th>
+                                        <th>Period</th>
+                                        <th>Reason</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="empLeavesTableBody">
+                                    <!-- Dynamic -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: Profile -->
+        <div id="sec-profile" class="emp-section d-none">
+            <div class="row justify-content-center">
+                <div class="col-md-8 col-lg-6">
+                    <div class="glass-card p-4">
+                        <div class="text-center mb-4">
+                            <img id="pAvatar" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150" class="rounded-circle shadow mb-2" width="100" height="100">
+                            <h4 class="fw-bold mb-0 text-dark" id="pName">Sarah Connor</h4>
+                            <span class="badge badge-purple" id="pDesignation">Frontend Engineer</span>
+                        </div>
+                        <form id="profileForm">
+                            <div class="row g-3 mb-3">
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold fs-7 text-dark">Employee ID</label>
+                                    <input type="text" id="pId" class="form-control bg-light" readonly>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold fs-7 text-dark">Department</label>
+                                    <input type="text" id="pDept" class="form-control bg-light" readonly>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold fs-7 text-dark">Email Address</label>
+                                <input type="email" id="pEmail" class="form-control">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold fs-7 text-dark">Phone Number</label>
+                                <input type="text" id="pPhone" class="form-control">
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold fs-7 text-dark">Update Password</label>
+                                <input type="password" id="pPassword" class="form-control" placeholder="Leave blank to keep current">
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100 rounded-pill"><i class="fa-solid fa-floppy-disk me-2"></i>Save Profile Changes</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        let currentUser = store.getCurrentUser();
+        if (!currentUser || currentUser.role !== 'employee') {
+            window.location.href = 'login.html';
+        }
+
+        document.getElementById('empHeaderName').textContent = currentUser.name;
+        if (currentUser.avatar) document.getElementById('empHeaderAvatar').src = currentUser.avatar;
+
+        let currentLat = null, currentLng = null, distanceToHQ = 0;
+        let empMap, empMarker, empHqCircle;
+
+        // Clock Update
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('liveClock').textContent = now.toLocaleTimeString();
+            document.getElementById('liveDate').textContent = now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
+        }, 1000);
+
+        function showSection(sec) {
+            document.querySelectorAll('.emp-section').forEach(e => e.classList.add('d-none'));
+            document.querySelectorAll('.nav-link').forEach(e => e.classList.remove('active'));
+
+            document.getElementById('sec-' + sec).classList.remove('d-none');
+            document.getElementById('tab-' + sec).classList.add('active');
+
+            if (sec === 'punch') initPunchView();
+            if (sec === 'history') renderEmpHistory();
+            if (sec === 'leave') renderEmpLeaves();
+            if (sec === 'profile') renderEmpProfile();
+        }
+
+        function initPunchView() {
+            const company = store.getCompany();
+            document.getElementById('hqNameText').textContent = company.name;
+            document.getElementById('allowedRadiusText').textContent = company.allowedRadius + ' meters';
+
+            // Immediate fallback to HQ location if GPS takes time
+            currentLat = company.latitude + 0.0003;
+            currentLng = company.longitude + 0.0003;
+            distanceToHQ = calculateDistance(currentLat, currentLng, company.latitude, company.longitude);
+            document.getElementById('distanceText').textContent = distanceToHQ + ' meters';
+            renderEmpMap(currentLat, currentLng, company);
+
+            checkTodayPunchStatus();
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    currentLat = pos.coords.latitude;
+                    currentLng = pos.coords.longitude;
+                    distanceToHQ = calculateDistance(currentLat, currentLng, company.latitude, company.longitude);
+
+                    document.getElementById('distanceText').textContent = distanceToHQ + ' meters';
+                    if (distanceToHQ <= company.allowedRadius) {
+                        document.getElementById('distanceText').className = 'fw-semibold text-success';
+                    } else {
+                        document.getElementById('distanceText').className = 'fw-semibold text-danger';
+                    }
+
+                    renderEmpMap(currentLat, currentLng, company);
+                }, (err) => {
+                    console.log('GPS error/timeout, using simulated offset:', err);
+                }, { timeout: 3500, enableHighAccuracy: true });
+            }
+        }
+
+        function renderEmpMap(lat, lng, company) {
+            setTimeout(() => {
+                if (!empMap) {
+                    empMap = L.map('emp-leaflet-map').setView([lat, lng], 15);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(empMap);
+                } else {
+                    empMap.setView([lat, lng], 15);
+                }
+
+                empMap.invalidateSize();
+
+                if (empMarker) empMap.removeLayer(empMarker);
+                if (empHqCircle) empMap.removeLayer(empHqCircle);
+
+                empMarker = L.marker([lat, lng]).addTo(empMap).bindPopup('Your Location').openPopup();
+                empHqCircle = L.circle([company.latitude, company.longitude], {
+                    color: '#6d28d9',
+                    fillColor: '#8b5cf6',
+                    fillOpacity: 0.2,
+                    radius: company.allowedRadius
+                }).addTo(empMap);
+            }, 350);
+        }
+
+        function checkTodayPunchStatus() {
+            const today = new Date().toISOString().split('T')[0];
+            const records = store.getAttendance();
+            const record = records.find(r => r.employeeId === currentUser.id && r.date === today);
+
+            const btn = document.getElementById('punchBtn');
+            const label = document.getElementById('punchBtnLabel');
+            const badge = document.getElementById('punchStatusBadge');
+
+            if (!record) {
+                btn.className = 'punch-circle';
+                btn.disabled = false;
+                label.textContent = 'PUNCH IN';
+                badge.className = 'badge badge-purple px-3 py-2 fs-7';
+                badge.textContent = 'NOT PUNCHED IN TODAY';
+            } else if (record.punchIn && !record.punchOut) {
+                btn.className = 'punch-circle punched-in';
+                btn.disabled = false;
+                label.textContent = 'PUNCH OUT';
+                badge.className = 'badge bg-success px-3 py-2 fs-7';
+                badge.textContent = 'PUNCHED IN AT ' + record.punchIn;
+            } else {
+                btn.className = 'punch-circle bg-dark text-white opacity-75';
+                btn.disabled = true;
+                label.textContent = 'COMPLETED';
+                badge.className = 'badge bg-primary px-3 py-2 fs-7';
+                badge.textContent = 'TODAY WORK DONE (' + (record.hours || '8 hrs') + ')';
+            }
+        }
+
+        function handlePunchAction() {
+            const company = store.getCompany();
+            if (currentLat === null || currentLng === null) {
+                currentLat = company.latitude + 0.0003;
+                currentLng = company.longitude + 0.0003;
+                distanceToHQ = calculateDistance(currentLat, currentLng, company.latitude, company.longitude);
+            }
+
+            if (distanceToHQ > company.allowedRadius) {
+                showToast(`Geofence Alert: You are ${distanceToHQ}m away from Office (Allowed: ${company.allowedRadius}m). Attendance flagged with location notice.`, 'warning');
+            }
+
+            const today = new Date().toISOString().split('T')[0];
+            const timeStr = new Date().toLocaleTimeString();
+            let records = store.getAttendance();
+            let record = records.find(r => r.employeeId === currentUser.id && r.date === today);
+
+            if (!record) {
+                // Punch In
+                const newRecord = {
+                    id: 'att_' + Date.now(),
+                    date: today,
+                    employeeId: currentUser.id,
+                    employeeName: currentUser.name,
+                    punchIn: timeStr,
+                    punchOut: null,
+                    hours: 'In Progress',
+                    lat: currentLat,
+                    lng: currentLng,
+                    distance: distanceToHQ
+                };
+                store.saveAttendanceRecord(newRecord);
+                showToast('Punch In Successful at ' + timeStr, 'success');
+            } else if (record.punchIn && !record.punchOut) {
+                // Punch Out & Dynamic Hours Calculation
+                record.punchOut = timeStr;
+                record.hours = calculateTimeDuration(record.punchIn, timeStr);
+                store.saveAttendanceRecord(record);
+                showToast('Punch Out Successful at ' + timeStr, 'success');
+            }
+
+            checkTodayPunchStatus();
+        }
+
+        function renderEmpHistory() {
+            const records = store.getAttendance().filter(r => r.employeeId === currentUser.id);
+            const tbody = document.getElementById('empHistoryTableBody');
+            tbody.innerHTML = records.map(r => `
+                <tr>
+                    <td>${r.date}</td>
+                    <td><span class="badge bg-success-subtle text-success">${r.punchIn}</span></td>
+                    <td><span class="badge bg-danger-subtle text-danger">${r.punchOut || 'Active'}</span></td>
+                    <td>${r.hours}</td>
+                    <td><small>${r.lat ? r.lat.toFixed(4) + ', ' + r.lng.toFixed(4) : 'N/A'}</small></td>
+                    <td><span class="badge badge-soft-success">${r.distance}m (Valid)</span></td>
+                </tr>
+            `).join('');
+        }
+
+        document.getElementById('leaveApplyForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const leave = {
+                id: 'l_' + Date.now(),
+                appliedOn: new Date().toISOString().split('T')[0],
+                employeeId: currentUser.id,
+                employeeName: currentUser.name,
+                leaveType: document.getElementById('lLeaveType').value,
+                fromDate: document.getElementById('lFromDate').value,
+                toDate: document.getElementById('lToDate').value,
+                reason: document.getElementById('lReason').value,
+                status: 'Pending'
+            };
+            store.saveLeave(leave);
+            showToast('Leave Application Submitted Successfully!', 'success');
+            this.reset();
+            renderEmpLeaves();
+        });
+
+        function renderEmpLeaves() {
+            const leaves = store.getLeaves().filter(l => l.employeeId === currentUser.id);
+            const tbody = document.getElementById('empLeavesTableBody');
+            tbody.innerHTML = leaves.map(l => `
+                <tr>
+                    <td>${l.appliedOn}</td>
+                    <td><span class="badge badge-purple">${l.leaveType}</span></td>
+                    <td>${l.fromDate} to ${l.toDate}</td>
+                    <td><small>${l.reason}</small></td>
+                    <td>
+                        <span class="badge ${l.status === 'Approved' ? 'badge-soft-success' : l.status === 'Rejected' ? 'badge-soft-danger' : 'badge-soft-warning'}">
+                            ${l.status}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderEmpProfile() {
+            document.getElementById('pId').value = currentUser.id;
+            document.getElementById('pName').textContent = currentUser.name;
+            document.getElementById('pDesignation').textContent = currentUser.designation;
+            document.getElementById('pDept').value = currentUser.department;
+            document.getElementById('pEmail').value = currentUser.email;
+            document.getElementById('pPhone').value = currentUser.phone;
+        }
+
+        document.getElementById('profileForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            currentUser.email = document.getElementById('pEmail').value;
+            currentUser.phone = document.getElementById('pPhone').value;
+            const newPwd = document.getElementById('pPassword').value;
+            if (newPwd) currentUser.passwordHash = newPwd;
+
+            store.saveEmployee(currentUser);
+            store.setCurrentUser(currentUser);
+            showToast('Profile updated successfully!', 'success');
+        });
+
+        showSection('punch');
+    </script>
+</body>
+</html>
